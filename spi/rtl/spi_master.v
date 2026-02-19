@@ -14,10 +14,13 @@ module spi_master(
 reg [2:0] bit_cnt;
 reg [7:0] shift;
 reg start_d;
+reg sclk_d;
+reg sclk_en;
 
-always @(posedge clk or negedge rst_n) begin
+always @(negedge clk or negedge rst_n) begin
     if (!rst_n) begin
         sclk <= 0;
+        sclk_en <= 0;
         mosi <= 0;
         done <= 0;
         busy <= 0;
@@ -26,20 +29,24 @@ always @(posedge clk or negedge rst_n) begin
         start_d <= 0;
     end
     else begin
+        valid <= 0;
         start_d <= start;
         done <= 0;
+        sclk_d <= sclk;
 
         if (start && !start_d) begin
             busy <= 1;
             cs_n <= 0;
             shift <= data;
             bit_cnt <= 7;
+            mosi <= data[7];
         end
 
-        if (busy) begin
+            sclk_en <= ~sclk_en;
+        if (busy && sclk_en) begin
             sclk <= ~sclk;
 
-            if (sclk == 0) begin
+            if (sclk_d == 0 && sclk == 1) begin
                 mosi <= shift[7];
                 shift <= shift << 1;
 

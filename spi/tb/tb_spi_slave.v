@@ -21,6 +21,8 @@ spi_slave uut (
 
 // clock
 initial begin
+    $dumpfile("wave.vcd");
+    $dumpvars(0, tb_spi_slave);
     sclk = 0;
     forever #5 sclk = ~sclk;
 end

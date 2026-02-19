@@ -11,7 +11,7 @@ module spi_slave (
 reg [7:0] shift_reg;
 reg [2:0] bit_cnt;
 
-always @(posedge sclk or negedge rst_n) begin
+always @(negedge sclk or negedge rst_n) begin
     if (!rst_n) begin
         shift_reg <= 0;
         bit_cnt   <= 0;
