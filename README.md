@@ -70,3 +70,72 @@ No arithmetic overflow
 ---
 
 ## Repository Structure
+
+## Additional Module: SPI Communication Core 追加モジュール
+
+This repository also includes a custom-designed SPI communication core implemented in RTL.
+本リポジトリには独自設計のSPI通信コアも含まれています。
+
+---
+
+## Features 機能
+
+- SPI Master module
+- SPI Slave module
+- Mode0 operation
+- 8-bit transfer
+- MSB-first shifting
+- Busy control logic
+- Valid flag generation
+
+---
+
+## Verification 検証内容
+
+The SPI modules were verified using simulation testbenches.  
+SPIモジュールはシミュレーションテストベンチにより検証済み。
+
+- byte transmission correctness
+- clock synchronization
+- reset recovery behavior
+- master–slave integration communication
+
+Integration test confirms successful communication.
+
+---
+
+## Design Notes 設計ポイント
+
+- Fully synchronous design
+- Deterministic timing behavior
+- Edge-safe sampling
+- Reset-safe startup sequence
+
+---
+
+## Debug Experience デバッグ実績
+
+During development, an initial byte-loss issue was detected after reset.  
+The root cause was timing instability immediately after reset release.  
+This was resolved by inserting clock stabilization cycles before communication start.
+
+- リセット直後に最初の1バイトが欠落する問題を確認
+- 原因：リセット解除直後のタイミング不安定
+- 対策：通信開始前にクロック待機を挿入し解決
+
+---
+
+## Engineering Value 技術的意義
+
+This module demonstrates:
+
+- RTL communication design capability
+- verification-driven development
+- timing-aware hardware implementation
+
+## feat(spi-slave): implement verified SPI slave module with waveform validation
+
+- correct edge sampling
+- fixed valid pulse timing
+- verified MSB-first transfer
+- waveform confirmed in GTKWave
