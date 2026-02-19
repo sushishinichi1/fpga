@@ -115,7 +115,8 @@ initial begin
     expected = 8'hFF;
     send_byte(expected);
 
-    #200;
+    repeat(1000) @(posedge clk);
+    #20;
 
     $display("RESULT  PASS=%0d  FAIL=%0d", pass, fail);
     $finish;

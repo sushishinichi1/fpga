@@ -14,7 +14,7 @@ wire busy;
 
 wire [7:0] rx_data;
 wire valid;
-
+reg valid_d; 
 integer pass = 0;
 integer fail = 0;
 
@@ -54,15 +54,14 @@ spi_slave slave (
 //================ SEND TASK =================
 task send_byte(input [7:0] d);
 begin
-    @(posedge clk);
+    @(negedge clk);
     tx_data <= d;
     start   <= 1;
+    
+    @(negedge clk);
+    start = 0;
 
-    repeat(3) @(posedge clk);
-    start <= 0;
-
-    wait(busy == 1);
-    wait(busy == 0);
+    repeat(200) @(posedge clk);
 end
 endtask
 
@@ -91,7 +90,7 @@ initial begin
 
     #50;
     rst_n = 1;
-    repeat(2) @(posedge clk);
+    repeat(10) @(posedge clk);
 
     expected = 8'hA5;
     send_byte(expected);
@@ -102,10 +101,14 @@ initial begin
     expected = 8'hFF;
     send_byte(expected);
 
-    #200;
+    repeat(1000) @(posedge clk);
 
-    $display("RESULT PASS=%0d FAIL=%0d", pass, fail);
-    $finish;
+if ($time > 100000)
+    $display("TIMEOUT");
+
+$display("RESULT PASS=%0d FAIL=%0d", pass, fail);
+$finish;
 end
+
 
 endmodule

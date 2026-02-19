@@ -14,25 +14,25 @@ module spi_master(
 reg [2:0] bit_cnt;
 reg [7:0] shift;
 reg start_d;
-reg sclk_d;
-reg sclk_en;
+reg [2:0] clkdiv;
+reg last_bit;
 
-always @(negedge clk or negedge rst_n) begin
+always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         sclk <= 0;
-        sclk_en <= 0;
         mosi <= 0;
         done <= 0;
         busy <= 0;
         cs_n <= 1;
         bit_cnt <= 0;
         start_d <= 0;
+        shift <= 0;
+        clkdiv <= 0;
+        last_bit <= 0;
     end
     else begin
-        valid <= 0;
         start_d <= start;
         done <= 0;
-        sclk_d <= sclk;
 
         if (start && !start_d) begin
             busy <= 1;
@@ -42,24 +42,34 @@ always @(negedge clk or negedge rst_n) begin
             mosi <= data[7];
         end
 
-            sclk_en <= ~sclk_en;
-        if (busy && sclk_en) begin
-            sclk <= ~sclk;
+        if (busy) begin
+    clkdiv <= clkdiv + 1;
 
-            if (sclk_d == 0 && sclk == 1) begin
-                mosi <= shift[7];
-                shift <= shift << 1;
+    if (clkdiv == 3) begin
+        clkdiv <= 0;
+        sclk <= ~sclk;
 
-                if (bit_cnt == 0) begin
-                    busy <= 0;
-                    cs_n <= 1;
-                    done <= 1;
-                end
-                else begin
-                    bit_cnt <= bit_cnt - 1;
-                end
-            end
+        if (sclk == 1) begin
+            mosi <= shift[7];
+            shift <= shift << 1;
+
+            if (bit_cnt == 0) begin
+            last_bit <= 1;
         end
+        else begin
+            bit_cnt <= bit_cnt - 1;
+        end
+
+        if (last_bit) begin
+            busy <= 0;
+            cs_n <= 1;
+            done <= 1;
+            last_bit <= 0;
+        end
+        end
+    end
+end
+
     end
 end
 

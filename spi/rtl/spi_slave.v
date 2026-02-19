@@ -19,6 +19,7 @@ always @(negedge sclk or negedge rst_n) begin
         valid     <= 0;
     end
     else begin
+        valid <= 0;
         if (cs_n) begin
             bit_cnt <= 0;
             valid   <= 0;
@@ -32,6 +33,7 @@ always @(negedge sclk or negedge rst_n) begin
                 bit_cnt <= 0;
             end
             else begin
+                valid <= 0;
                 bit_cnt <= bit_cnt + 1;
                 valid   <= 0;
             end

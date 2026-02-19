@@ -1,73 +1,42 @@
-`timescale 1ns/1ps
+module spi_slave (
+    input  wire       sclk,
+    input  wire       cs_n,
+    input  wire       mosi,
+    input  wire       rst_n,
 
-module tb_spi_slave;
-
-reg sclk;
-reg cs_n;
-reg mosi;
-reg rst_n;
-
-wire [7:0] data;
-wire valid;
-
-spi_slave uut (
-    .sclk(sclk),
-    .cs_n(cs_n),
-    .mosi(mosi),
-    .rst_n(rst_n),
-    .data(data),
-    .valid(valid)
+    output reg [7:0]  data,
+    output reg        valid
 );
 
-// clock
-initial begin
-    $dumpfile("wave.vcd");
-    $dumpvars(0, tb_spi_slave);
-    sclk = 0;
-    forever #5 sclk = ~sclk;
-end
+reg [7:0] shift_reg;
+reg [2:0] bit_cnt;
 
-
-// SPI送信タスク（正しい版）
-task send_byte(input [7:0] byte);
-integer i;
-begin
-    cs_n = 0;
-
-    for (i=7; i>=0; i=i-1) begin
-        mosi = byte[i];
-        @(posedge sclk);
+always @(posedge sclk or negedge rst_n) begin
+    if (!rst_n) begin
+        shift_reg <= 0;
+        bit_cnt   <= 0;
+        data      <= 0;
+        valid     <= 0;
     end
+    else begin
+        valid <= 0;
 
-    cs_n = 1;
-    @(posedge sclk);
-end
-endtask
+        if (cs_n) begin
+            bit_cnt <= 0;
+        end
+        else begin
+            shift_reg <= {shift_reg[6:0], mosi};
 
-
-// test
-initial begin
-    rst_n = 0;
-    cs_n  = 1;
-    mosi  = 0;
-
-    #20;
-    rst_n = 1;
-    repeat(2) @(posedge sclk);
-
-    send_byte(8'hA5);
-    send_byte(8'h3C);
-    send_byte(8'hFF);
-
-    #50;
-    $finish;
-end
-
-
-// monitor
-always @(posedge sclk) begin
-    if (valid)
-        $display("RECEIVED = %h time=%0t", data, $time);
+            if (bit_cnt == 3'd7) begin
+                data <= {shift_reg[6:0], mosi};
+                valid <= 1;
+                bit_cnt <= 0;
+            end
+            else begin
+                bit_cnt <= bit_cnt + 1;
+            end
+        end
+    end
 end
 
 endmodule
