@@ -73,10 +73,8 @@ always @(posedge sclk) begin
     if (valid) begin
         if (rx_data == expected) begin
             pass = pass + 1;
-            $display("PASS TX=%h RX=%h", expected, rx_data);
         end else begin
             fail = fail + 1;
-            $display("FAIL TX=%h RX=%h", expected, rx_data);
         end
     end
 end
@@ -104,9 +102,6 @@ initial begin
     repeat(1000) @(posedge clk);
 
 if ($time > 100000)
-    $display("TIMEOUT");
-
-$display("RESULT PASS=%0d FAIL=%0d", pass, fail);
 $finish;
 end
 

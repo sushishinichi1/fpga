@@ -1,8 +1,14 @@
+`default_nettype none
+`timescale 1ns/1ps
+`include "spi_defs.v"
+
 module spi_master(
-    input clk,
+    
     input start,
+    input logic clk,
     input rst_n,
     input [7:0] data,
+    input miso,
 
     output reg sclk,
     output reg cs_n,
@@ -10,12 +16,14 @@ module spi_master(
     output reg mosi,
     output reg done
 );
-
 reg [2:0] bit_cnt;
 reg [7:0] shift;
 reg start_d;
 reg [2:0] clkdiv;
 reg last_bit;
+reg finish_pending;
+reg last_bit_phase;
+reg start_wait;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -28,49 +36,69 @@ always @(posedge clk or negedge rst_n) begin
         start_d <= 0;
         shift <= 0;
         clkdiv <= 0;
-        last_bit <= 0;
+        last_bit_phase <= 0;
+        start_wait <= 0;
+        finish_pending <= 0;
     end
     else begin
-        start_d <= start;
         done <= 0;
 
+        //====================
+        // start edge detect
+        //====================
         if (start && !start_d) begin
             busy <= 1;
             cs_n <= 0;
-            shift <= data;
+            sclk <= 0;
+            clkdiv <= 0;
+            shift <= {data[6:0],1'b0};
             bit_cnt <= 7;
-            mosi <= data[7];
-        end
-
-        if (busy) begin
-    clkdiv <= clkdiv + 1;
-
-    if (clkdiv == 3) begin
-        clkdiv <= 0;
-        sclk <= ~sclk;
-
-        if (sclk == 1) begin
             mosi <= shift[7];
-            shift <= shift << 1;
-
-            if (bit_cnt == 0) begin
-            last_bit <= 1;
-        end
-        else begin
-            bit_cnt <= bit_cnt - 1;
+            start_wait <= 1;
         end
 
-        if (last_bit) begin
-            busy <= 0;
-            cs_n <= 1;
-            done <= 1;
-            last_bit <= 0;
+        //====================
+        // transfer
+        //====================
+        if (busy) begin
+
+            if (start_wait)
+                start_wait <= 0;
+
+            if (clkdiv == 3) begin
+                clkdiv <= 0;
+
+                if (sclk == 1) begin
+                    mosi <= shift[7];
+                    shift <= shift << 1;
+
+                    if (bit_cnt != 0)
+                        bit_cnt <= bit_cnt - 1;
+                end
+
+                sclk <= ~sclk;
+
+                if (bit_cnt == 0 && sclk == 1) begin
+                    if (last_bit_phase == 0)
+                        last_bit_phase <= 1;
+                    else begin
+                        busy <= 0;
+                        cs_n <= 1;
+                        done <= 1;
+                        last_bit_phase <= 0;
+                    end
+                end
+            end
+            else begin
+                clkdiv <= clkdiv + 1;
+            end
         end
-        end
+
+    
+    start_d <= start;
+
     end
-end
-
-    end
+    if (bit_cnt == 0 && busy && clkdiv == 0 && sclk == 1)
 end
 
 endmodule

@@ -1,3 +1,4 @@
+`default_nettype none
 `timescale 1ns/1ps
 
 module tb_spi;
@@ -47,10 +48,8 @@ begin
     wait(done);
 
     if (captured !== val) begin
-        $display("FAIL expected=%h got=%h", val, captured);
         fail_count = fail_count + 1;
     end else begin
-        $display("PASS data=%h", val);
         pass_count = pass_count + 1;
     end
 
@@ -68,8 +67,6 @@ initial begin
 
     #50;
 
-    $display("==== RESULT ====");
-    $display("PASS=%0d FAIL=%0d", pass_count, fail_count);
 
     if (fail_count > 0)
         $fatal;
