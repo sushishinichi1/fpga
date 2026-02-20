@@ -98,7 +98,6 @@ always @(posedge clk or negedge rst_n) begin
     start_d <= start;
 
     end
-    if (bit_cnt == 0 && busy && clkdiv == 0 && sclk == 1)
 end
 
 endmodule

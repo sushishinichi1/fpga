@@ -30,6 +30,7 @@ wire cs_n;
 reg [7:0] slave_tx;
 wire [7:0] slave_rx;
 wire slave_valid;
+wire [7:0] fifo_dout;
 
 
 
@@ -37,7 +38,7 @@ spi_master master (
     .clk(clk),
     .start(start),
     .rst_n(rst_n),
-    .data(master_tx),
+    .data(fifo_dout),
     .miso(miso),
     .sclk(sclk),
     .cs_n(cs_n),
@@ -59,6 +60,19 @@ spi_slave slave (
     .miso(miso)
 );
 
+simple_fifo fifo (
+    .clk(clk),
+    .rst_n(rst_n),
+    .wr_en(!busy && !fifo_full),
+    .wr_data(master_tx),
+    .rd_en(!busy && !fifo_empty),
+    .rd_data(fifo_dout),
+    .full(fifo_full),
+    .empty(fifo_empty)
+);
+
+wire fifo_full;
+wire fifo_empty;
 
 integer pass = 0;
 integer fail = 0;
@@ -71,6 +85,8 @@ initial begin
 
     repeat(3) @(posedge clk);
 
+    wait(!fifo_empty);
+    @(posedge clk);
     start = 1;
     @(posedge clk);
     start = 0;
@@ -81,6 +97,7 @@ initial begin
     if (slave_rx == master_tx) pass = pass + 1;
     else fail = fail + 1;
     #20;
+    $display("PASS=%0d FAIL=%0d RX=%h", pass, fail, slave_rx);
     $finish;
 end
 endmodule
