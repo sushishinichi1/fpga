@@ -1,3 +1,16 @@
-# build outputs
+# build
 *.out
-a.out
+*.vcd
+*.log
+*.fst
+
+# verilator
+obj_dir/
+
+# editor
+*.swp
+*.swo
+.DS_Store
+
+# temp
+tmp/
