@@ -24,6 +24,7 @@ reg last_bit;
 reg finish_pending;
 reg last_bit_phase;
 reg start_wait;
+wire sclk_next = ~sclk;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -68,7 +69,8 @@ always @(posedge clk or negedge rst_n) begin
             if (clkdiv == 3) begin
                 clkdiv <= 0;
 
-                if (sclk == 1) begin
+
+                if (sclk_next == 0) begin
                     mosi <= shift[7];
                     shift <= shift << 1;
 
@@ -76,7 +78,7 @@ always @(posedge clk or negedge rst_n) begin
                         bit_cnt <= bit_cnt - 1;
                 end
 
-                sclk <= ~sclk;
+                sclk <= sclk_next;
 
                 if (bit_cnt == 0 && sclk == 1) begin
                     if (last_bit_phase == 0)

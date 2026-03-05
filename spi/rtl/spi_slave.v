@@ -22,7 +22,12 @@ always @(negedge cs_n or negedge rst_n) begin
         tx_shift <= tx_data;
 end
 
-always @(posedge sclk or negedge rst_n) begin
+always @(posedge sclk or posedge cs_n or negedge rst_n) begin
+    if (cs_n) begin
+        shift_reg <= 0;
+        bit_cnt <= 0;
+        valid <= 0;
+    end else
     if (!rst_n) begin
         shift_reg <= 0;
         bit_cnt   <= 0;
