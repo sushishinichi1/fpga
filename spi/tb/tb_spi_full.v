@@ -5,6 +5,8 @@ module tb_spi_full;
 
 initial begin
     #1;
+#2000000;
+$finish;
 end
 
 reg clk = 0;
@@ -26,19 +28,51 @@ wire mosi;
 wire miso;
 wire sclk;
 wire cs_n;
+reg start_req;
+reg ready;
 
 reg [7:0] slave_tx;
 wire [7:0] slave_rx;
 wire slave_valid;
 wire [7:0] fifo_dout;
+reg [7:0] sent_data;
+reg [7:0] fifo_hold;
 
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n)
+        fifo_hold <= 0;
+    else if(!busy && !fifo_empty) 
+        fifo_hold <= fifo_dout;
+end
 
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+        start <= 0;
+        sent_data <= 0;
+    end
+    else begin
+        start <= start_req;
+        if(start_req)
+            sent_data <= fifo_dout;
+    end
+end
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n)
+        start_req <= 0;
+    else
+        start_req <= (!busy && !fifo_empty);
+end
+always @(posedge clk) begin
+    ready <= (!busy && !fifo_empty);
+
+start_req <= ready;
+end
 
 spi_master master (
     .clk(clk),
     .start(start),
     .rst_n(rst_n),
-    .data(fifo_dout),
+    .data(fifo_hold),
     .miso(miso),
     .sclk(sclk),
     .cs_n(cs_n),
@@ -63,9 +97,9 @@ spi_slave slave (
 simple_fifo fifo (
     .clk(clk),
     .rst_n(rst_n),
-    .wr_en(!busy && !fifo_full),
+    .wr_en(!fifo_full),
     .wr_data(master_tx),
-    .rd_en(!busy && !fifo_empty),
+    .rd_en(!fifo_empty && !busy && !start),
     .rd_data(fifo_dout),
     .full(fifo_full),
     .empty(fifo_empty)
@@ -76,26 +110,35 @@ wire fifo_empty;
 
 integer pass = 0;
 integer fail = 0;
+integer count = 0;
 
 initial begin
-
     start = 0;
-    master_tx = 8'h3A;
+    repeat(4) begin
+        @(posedge clk);
+        master_tx = $random;
+    end
     slave_tx  = 8'hC5;
 
     repeat(3) @(posedge clk);
 
-    wait(!fifo_empty);
-    @(posedge clk);
-    start = 1;
-    @(posedge clk);
-    start = 0;
-
+    
     @(posedge done);
 
     #1;
-    if (slave_rx == master_tx) pass = pass + 1;
-    else fail = fail + 1;
+    repeat(4) begin
+        @(posedge done);
+        sent_data = fifo_dout;
+        #1;
+        if (slave_rx == sent_data)
+            pass = pass + 1;
+        else begin
+            fail = fail + 1;
+            $display("FAIL sent=%h recv=%h fifo=%h time=%0t",
+                    sent_data, slave_rx, fifo_dout, $time);
+        end
+        count = count + 1;
+    end
     #20;
     $display("PASS=%0d FAIL=%0d RX=%h", pass, fail, slave_rx);
     $finish;
