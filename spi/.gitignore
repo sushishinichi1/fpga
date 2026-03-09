@@ -1,0 +1,16 @@
+# build
+*.out
+*.vcd
+*.log
+*.fst
+
+# verilator
+obj_dir/
+
+# editor
+*.swp
+*.swo
+.DS_Store
+
+# temp
+tmp/
